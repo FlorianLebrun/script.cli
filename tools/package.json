@@ -1,0 +1,14 @@
+{
+  "name": "tools",
+  "bin": {
+    "project-devrun": "./project-devrun.js",
+    "project-pack": "./project-pack.js"
+  },
+  "dependencies": {
+    "node-watch": "0.5.9",
+    "dts-bundle-generator": "^5.4.0",
+    "rollup": "^2.29.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-local-resolve": "^1.0.7"
+  }
+}

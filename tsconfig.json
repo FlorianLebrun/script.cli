@@ -1,0 +1,40 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"target": "es6",
+		"outDir": "./.build",
+		"sourceMap": true,
+		"strict": false,
+		"esModuleInterop": true,
+		"strictNullChecks": false,
+		"allowSyntheticDefaultImports": true,
+		"forceConsistentCasingInFileNames": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"skipLibCheck": true,
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			"@polycuber/script.cli": [
+				"src"
+			],
+			"*": [
+				"node_modules/*"
+			]
+		},
+		"plugins": [
+			{
+				"transform": "typescript-transform-paths"
+			}
+		]
+	},
+	"files": [
+		"src/index.ts",
+		"tests/index.ts"
+	],
+	"include": [
+		"src",
+		"tests"
+	]
+}
