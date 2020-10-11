@@ -1,37 +1,18 @@
 import Path from "path"
 import fs from "fs"
 
-export const file: {
-  exists(path: string): boolean
-  remove(path: string)
-  copy: {
-    toFile(src: string, dest: string): string
-    toDir(src: string, dest: string): string
-  }
-  move: {
-    toFile(src: string, dest: string): string
-    toDir(src: string, dest: string): string
-  }
-  read: {
-    json(path: string): any
-    text(path: string): string
-  }
-  write: {
-    json(path: string, data: any)
-    text(path: string, data: string)
-  }
-} = {
-  exists(path) {
+export const file = {
+  exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isFile()
   },
   copy: {
-    toFile(src, dest) {
+    toFile(src: string, dest: string): string {
       dest = Path.resolve(dest)
       directory.make(Path.dirname(dest))
       fs.copyFileSync(src, dest)
       return dest
     },
-    toDir(src, dest) {
+    toDir(src: string, dest: string) {
       dest = Path.resolve(dest, Path.basename(src))
       directory.make(Path.dirname(dest))
       fs.copyFileSync(src, dest)
@@ -39,14 +20,14 @@ export const file: {
     }
   },
   move: {
-    toFile(src, dest) {
+    toFile(src: string, dest: string) {
       dest = Path.resolve(dest)
       directory.make(Path.dirname(dest))
       fs.copyFileSync(src, dest)
       fs.unlinkSync(src)
       return dest
     },
-    toDir(src, dest) {
+    toDir(src: string, dest: string) {
       dest = Path.resolve(dest, Path.basename(src))
       directory.make(Path.dirname(dest))
       fs.copyFileSync(src, dest)
@@ -55,48 +36,51 @@ export const file: {
     },
   },
   read: {
-    json(path) {
+    json(path: string) {
       try { return JSON.parse(fs.readFileSync(path).toString()) }
       catch (e) { return undefined }
     },
-    text(path) {
+    text(path: string) {
       try { return fs.readFileSync(path).toString() }
       catch (e) { return undefined }
     }
   },
   write: {
-    json(path, data) {
+    json(path: string, data: any) {
       directory.make(Path.dirname(path))
       fs.writeFileSync(path, JSON.stringify(data, null, 2))
     },
-    text(path, data) {
+    text(path: string, data: string) {
       directory.make(Path.dirname(path))
       fs.writeFileSync(path, Array.isArray(data) ? data.join("\n") : data.toString())
     }
   },
-  remove(path) {
+  find: {
+    upperDir(base: string, subpath: string) {
+      let previous, current = Path.resolve(base)
+      do {
+        previous = current
+        if (fs.existsSync(Path.join(current, subpath))) return current
+        current = Path.dirname(current)
+      } while (current != previous)
+    }
+  },
+  remove(path: string) {
     if (fs.existsSync(path)) {
       fs.unlinkSync(path)
     }
   },
 }
 
-export const directory: {
-  exists(path: string): boolean
-  filenames(path: string): string[]
-  copy(src: string, dest: string, filter?: (name: string, path: string, stats: fs.Stats) => boolean)
-  make(path: string)
-  remove(path: string)
-  clean(path: string)
-} = {
-  exists(path) {
+export const directory = {
+  exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isDirectory()
   },
-  filenames(path) {
+  filenames(path: string): string[] {
     try { return fs.readdirSync(path) || [] }
     catch (e) { return [] }
   },
-  copy(src, dest, filter) {
+  copy(src: string, dest: string, filter?: (name: string, path: string, stats: fs.Stats) => boolean) {
     if (directory.exists(src)) {
       for (const name of fs.readdirSync(src)) {
         const path = Path.join(src, name)
@@ -111,13 +95,13 @@ export const directory: {
       }
     }
   },
-  make(path) {
+  make(path: string) {
     if (path && !fs.existsSync(path)) {
       directory.make(Path.parse(path).dir)
       fs.mkdirSync(path)
     }
   },
-  remove(path) {
+  remove(path: string) {
     if (fs.existsSync(path) && fs.lstatSync(path).isDirectory()) {
       fs.readdirSync(path).forEach(function (entry) {
         var entry_path = Path.join(path, entry)
@@ -132,7 +116,7 @@ export const directory: {
       fs.rmdirSync(path)
     }
   },
-  clean(path) {
+  clean(path: string) {
     directory.remove(path)
     directory.make(path)
   },

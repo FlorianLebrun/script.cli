@@ -1,7 +1,7 @@
 import Process from "process"
 import { print } from "./print"
 
-
+require.resolve
 export type ScriptArgumentType = {
   type: string
   enums?: string[]
@@ -17,7 +17,13 @@ export type ScriptDescriptorType = {
   }
 }
 
-export function script(program: (argv?: any) => void, descriptor?: ScriptDescriptorType) {
+export interface ScriptFunction {
+  (program: (argv?: any) => void, descriptor?: ScriptDescriptorType): void
+}
+
+export const script: ScriptFunction = scriptEntrypoint as any
+
+function scriptEntrypoint(program: (argv?: any) => void, descriptor?: ScriptDescriptorType) {
   try {
     const argv = {}
     const argvInfos = descriptor && descriptor.arguments
