@@ -3,16 +3,6 @@
 const { script, file, directory, command, print } = require("../.build/src");
 const Path = require("path")
 
-function resolveDeps(deps) {
-  const result = {}
-  for (const key in deps) {
-    const ref = deps[key]
-    if (ref[0] === ".") result[key] = Path.resolve(ref)
-    else result[key] = ref
-  }
-  return result
-}
-
 script(async () => {
   const package_json = file.read.json("./package.json")
   print.info("Build project:", package_json.name)
@@ -45,7 +35,7 @@ script(async () => {
   {
     await rollup_script(package_json, false, './dist/.build/src/index.js', './dist/index.js')
     await rollup_types_definition(package_json, './dist/.build/src/index.d.ts', './dist/index.d.ts')
-    //directory.remove("./dist/.build")
+    directory.remove("./dist/.build")
   }
 
   /*
@@ -54,20 +44,12 @@ script(async () => {
   print.info(`[step: Build package resources]`)
   {
     file.write.json("./dist/package.json", {
-      "name": package_json.name,
-      "version": package_json.version,
-      "engines": package_json.engines,
+      ...package_json,
       "main": "index.js",
-      "publisher": package_json.publisher,
-      "repository": package_json.repository,
-      "license": package_json.license,
-      "enableProposedApi": package_json.enableProposedApi,
+      "types": "index.d.ts",
       "dependencies": resolveDeps(package_json.dependencies),
-      "contributes": package_json.contributes,
-      "activationEvents": package_json.activationEvents,
-      "scripts": {
-        "vsce": "vsce package"
-      }
+      "devDependencies": undefined,
+      "scripts": undefined
     })
 
     directory.remove("./docs")
@@ -81,6 +63,17 @@ script(async () => {
     directory.copy("./language", "./dist/language")
   }
 })
+
+function resolveDeps(deps) {
+  let result
+  for (const key in deps) {
+    const ref = deps[key]
+    if (!result) result = {}
+    if (ref[0] === ".") result[key] = Path.resolve(ref)
+    else result[key] = ref
+  }
+  return result
+}
 
 async function rollup_script(package_json, minify, input, output) {
   const { rollup } = require('rollup')

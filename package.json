@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "license": "MIT",
+  "private": false,
   "scripts": {
     "start": "project-devrun --watch ./.build --inspect 9230 --program ./.build/tests/test-docker",
     "build": "ttsc && project-pack",
