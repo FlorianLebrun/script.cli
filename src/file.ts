@@ -76,29 +76,31 @@ export const directory = {
   exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isDirectory()
   },
-  filenames(path: string, lookForAllFiles?: Boolean): string[] {
+  filenames(path: string, recursive?: Boolean): string[] {
     try {
-      if (!lookForAllFiles) return fs.readdirSync(path) || [] 
+      if (recursive) {
 
-      function *walkSync(dir) {
-        const files = fs.readdirSync(dir);
-    
-        for (const file of files) {
-            const pathToFile = Path.join(dir, file);
-            const isDirectory = fs.statSync(pathToFile).isDirectory();
+        function *walkSync(dir: string) {
+          const files = fs.readdirSync(dir)
+      
+          for (const file of files) {
+            const pathToFile = Path.join(dir, file)
+            const isDirectory = fs.statSync(pathToFile).isDirectory()
             if (isDirectory) {
-                yield *walkSync(pathToFile);
+              yield *walkSync(pathToFile)
             } else {
-                yield pathToFile;
+              yield pathToFile
             }
+          }
         }
-      }
 
-      var _Result = []
-      for (const file of walkSync(path)) {
-        _Result.push(file)
+        var _Result = []
+        for (const file of walkSync(path)) {
+          _Result.push(Path.relative(path, file))
+        }
+        return _Result
       }
-      return _Result
+      else return fs.readdirSync(path) || [] 
     }
     catch (e) { return [] }
   },
