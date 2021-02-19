@@ -76,8 +76,30 @@ export const directory = {
   exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isDirectory()
   },
-  filenames(path: string): string[] {
-    try { return fs.readdirSync(path) || [] }
+  filenames(path: string, lookForAllFiles?: Boolean): string[] {
+    try {
+      if (!lookForAllFiles) return fs.readdirSync(path) || [] 
+
+      function *walkSync(dir) {
+        const files = fs.readdirSync(dir);
+    
+        for (const file of files) {
+            const pathToFile = Path.join(dir, file);
+            const isDirectory = fs.statSync(pathToFile).isDirectory();
+            if (isDirectory) {
+                yield *walkSync(pathToFile);
+            } else {
+                yield pathToFile;
+            }
+        }
+      }
+
+      var _Result = []
+      for (const file of walkSync(path)) {
+        _Result.push(file)
+      }
+      return _Result
+    }
     catch (e) { return [] }
   },
   copy(src: string, dest: string, filter?: (name: string, path: string, stats: fs.Stats) => boolean) {
