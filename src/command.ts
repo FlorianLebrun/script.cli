@@ -11,11 +11,68 @@ export type CommandOptionsType = {
   ignoreStatus?: boolean
 }
 
+function execSync(command, options) {
+  try {
+    const stdout = ChildProcess.execSync(command, {
+      ...options,
+      cwd: options && options.cwd && Path.resolve(options.cwd),
+    })
+    return stdout && stdout.toString()
+  }
+  catch (error) {
+    return handleError(command, error, options)
+  }
+}
+
+function spawnSync(program, args, options) {
+  const result = ChildProcess.spawnSync(program, args, {
+    ...options,
+    cwd: options && options.cwd && Path.resolve(options.cwd),
+  })
+  if (result.error || result.status) {
+    const command = `${program} ${args ? args.join(" ") : ""}`
+    return handleError(command, result.error || new Error(`Status ${result.status}`), options)
+  }
+  return result.stdout && result.stdout.toString()
+}
+
+function handleError(command, error, options) {
+  error.message = `Command '${command}' has failed:\n${indentMessage(error)}`
+  if (options && options.ignoreError) console.log("[ignored]", error.message)
+  else throw error
+  return error
+}
+
+function indentMessage(message) {
+  const padding = "    | "
+  return padding + message.toString().split("\n").join("\n" + padding)
+}
+
+type ReadCommand = {
+  exec(command: string, options?: CommandOptionsType): number
+  call(program: string, args?: (string | stringMap | stringArray)[], options?: CommandOptionsType): number
+}
+
 export const command: {
   exec(command: string, options?: CommandOptionsType): number
   call(program: string, args?: (string | stringMap | stringArray)[], options?: CommandOptionsType): number
   exit(status: number)
+  read: ReadCommand
 } = {
+  read: {
+    exec(command, options) {
+      return execSync(command, {
+        ...options,
+        stdio: 'pipe',
+      })
+    },
+    call(program, args, options) {
+      return spawnSync(program, args, {
+        ...options,
+        stdio: 'pipe',
+      })
+    },
+  },
   exec(command, options) {
     const status = ChildProcess.execSync(command, {
       ...options,

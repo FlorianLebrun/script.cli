@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "license": "MIT",
+  "author": {
+    "name": "Florian Lebrun"
+  },
   "private": false,
   "repository": {
     "url": "https://github.com/FlorianLebrun/script.cli"
