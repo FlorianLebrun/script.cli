@@ -1,5 +1,5 @@
 {
-  "name": "@polycuber/script.cli",
+  "name": "@ewam/script.cli",
   "version": "1.0.1",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,7 @@
   },
   "private": false,
   "repository": {
-    "url": "https://github.com/FlorianLebrun/script.cli"
+    "url": "https://github.com/wynsure/script.cli"
   },
   "scripts": {
     "start": "project-devrun --watch ./.build --inspect 9230 --program ./.build/tests/test-docker",
