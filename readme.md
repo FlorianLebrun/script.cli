@@ -1,6 +1,6 @@
 # Library for commands script
 
-Is design to make __simple and not performant__ synchronous program with cli.
+It is designed to make __simple and not performant__ synchronous program with cli.
 
 The __typescript definition__ will help to see other exposed features.
 
