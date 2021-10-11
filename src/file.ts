@@ -73,6 +73,12 @@ export const file = {
 }
 
 export const directory = {
+  getValidPath(paths) {
+    for (const path of paths) {
+      if (fs.existsSync(path)) return path
+    }
+    throw "no valid path found"
+  },
   exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isDirectory()
   },
