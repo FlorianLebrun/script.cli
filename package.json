@@ -1,11 +1,11 @@
 {
   "name": "@ewam/script.cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "simple and not performant common CLI operations",
   "main": "index.js",
   "license": "MIT",
   "author": {
-    "name": "Florian Lebrun"
+    "name": "Mphasis Wyde"
   },
   "private": false,
   "repository": {
@@ -14,7 +14,7 @@
   "scripts": {
     "start": "project-devrun --watch ./.build --inspect 9230 --program ./.build/tests/test-docker",
     "build": "ttsc && project-pack",
-    "publish": "cd dist&&npm run publish",
+    "publish": "npm run build&&cd dist&&npm publish",
     "watch": "ttsc -watch",
     "lint": "tslint",
     "test": "node ./.build/tests"

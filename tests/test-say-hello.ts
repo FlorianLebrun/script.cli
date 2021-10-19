@@ -1,4 +1,4 @@
-import { script, print } from "@polycuber/script.cli"
+import { script, print } from "@ewam/script.cli"
 
 script((argv) => {
   print.success("say:", argv.message)

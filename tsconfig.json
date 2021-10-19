@@ -16,7 +16,7 @@
 		"rootDir": ".",
 		"baseUrl": ".",
 		"paths": {
-			"@polycuber/script.cli": [
+			"@ewam/script.cli": [
 				"src"
 			],
 			"*": [
