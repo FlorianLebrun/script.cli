@@ -110,7 +110,7 @@ export const directory = {
     }
     catch (e) { return [] }
   },
-  copy(src: string, dest: string, filter?: (name: string, path: string, stats: fs.Stats) => boolean) {
+  copy(src: string, dest: string, filter?: (name: string, path: string, stats) => boolean) {
     if (directory.exists(src)) {
       for (const name of fs.readdirSync(src)) {
         const path = Path.join(src, name)
