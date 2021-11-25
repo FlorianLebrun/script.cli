@@ -18,3 +18,19 @@ script((argv) => {
   }
 })
 ```
+
+## DB
+
+```js
+const { db, DBKind } = require("@ewam/script.cli")
+
+db.createODBC({
+  sourceName: "test",
+  kind: DBKind.Postgre,
+  name: "myDB",
+  password: "myPassword",
+  user: "myUser",
+  server: "db.sql.com",
+})
+
+```

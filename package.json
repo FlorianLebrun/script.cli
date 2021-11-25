@@ -1,6 +1,6 @@
 {
   "name": "@ewam/script.cli",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "simple and not performant common CLI operations",
   "main": "index.js",
   "license": "MIT",
