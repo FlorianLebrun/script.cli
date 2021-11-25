@@ -1,3 +1,6 @@
+/**
+ * String utilities
+ */
 export const string = {
   slug(str: string): string {
     str = str.replace(/^\s+|\s+$/g, '') // trim

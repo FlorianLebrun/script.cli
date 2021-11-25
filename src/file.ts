@@ -1,6 +1,9 @@
 import Path from "path"
 import fs from "fs"
 
+/**
+ * File common operation
+ */
 export const file = {
   exists(path: string): boolean {
     return fs.existsSync(path) && fs.lstatSync(path).isFile()
@@ -72,6 +75,9 @@ export const file = {
   },
 }
 
+/**
+ * Manage directory common operation
+ */
 export const directory = {
   getValidPath(paths) {
     for (const path of paths) {

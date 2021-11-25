@@ -30,8 +30,13 @@ export enum DBKind {
   Oracle = "Oracle",
   Postgre = "Postgre",
 }
-
-type odbcParams = {
+/**
+ * ODBC Creation required parameters
+ */
+export type odbcParams = {
+  /**
+   * Database kind
+   */
   kind: DBKind
   sourceName: string
   server: string
@@ -41,21 +46,21 @@ type odbcParams = {
 }
 
 export const db = {
-  /*
-  Create an ODBC Connection
-  You must be admin to be able to run this task
-  */
-  createODBC(params: odbcParams): number {
+  /**
+   * Create an ODBC Connection using powershell and `Add-OdbcDsn`
+   * visit https://docs.microsoft.com/en-us/powershell/module/wdac/add-odbcdsn for details
+   * Warning: you must be admin to be able to run this task
+   * @param options Options to create the connection
+   */
+  createODBC(options: odbcParams): number {
     file.write.text(
       path.join(__dirname, "create-odbc-connection.ps1"),
       createODBC
     )
 
-    console.log(params.kind)
-
     const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName ${params.sourceName} -DbType ${params.kind} -DbServer ${params.server} -DbName ${params.name} -DbUser ${params.user} -DbPassword '${params.password}'`
-    console.log(`Creating ODBC connection ${params.sourceName}`)
+    const scriptParameters = `-ODBCConnectionName ${options.sourceName} -DbType ${options.kind} -DbServer ${options.server} -DbName ${options.name} -DbUser ${options.user} -DbPassword '${options.password}'`
+    console.log(`Creating ODBC connection ${options.sourceName}`)
     return command.exec(
       `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
       { cwd: __dirname }
