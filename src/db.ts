@@ -4,6 +4,7 @@ var path = require("path")
 
 const createODBC = `param(
   $ODBCConnectionName,
+  $ODBCDriverName,
   $DbType,
   $DbServer,
   $DbName,
@@ -11,20 +12,18 @@ const createODBC = `param(
   $DbPassword = ""
 )
 
+Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction SilentlyContinue
+
 if($DbType -eq "Postgre") {
   $DbPort = 5432
   $ODBCDriverName = "PostgreSQL Unicode(x64)"
+  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer","Port=$DbPort","Database=$DbName", "Username=$DBUser"; "Password=$DbPassword", "SSLMode=allow")
 } elseif ($DbType -eq "MSSQL") {
-  $DbPort = "undefined"
-  $ODBCDriverName = "undefined"
+  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer")
 } elseif ($DbType -eq "Oracle") {
-  $DbPort = "undefined"
-  $ODBCDriverName = "undefined"
+# Won t be implemented using ODBC
 }
-
-Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction SilentlyContinue
-Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer","Port=$DbPort","Database=$DbName", "Username=$DBUser"; "Password=$DbPassword", "SSLMode=allow")`
-
+`
 export enum DBKind {
   MSSQL = "MSSQL",
   Oracle = "Oracle",
@@ -43,6 +42,7 @@ export type odbcParams = {
   name: string
   user: string
   password: string
+  driverName : string
 }
 
 export const db = {
@@ -59,7 +59,7 @@ export const db = {
     )
 
     const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName ${options.sourceName} -DbType ${options.kind} -DbServer ${options.server} -DbName ${options.name} -DbUser ${options.user} -DbPassword '${options.password}'`
+    const scriptParameters = `-ODBCConnectionName ${options.sourceName} -ODBCDriverName ${options.driverName} -DbType ${options.kind} -DbServer ${options.server} -DbName ${options.name} -DbUser ${options.user} -DbPassword '${options.password}'`
     console.log(`Creating ODBC connection ${options.sourceName}`)
     return command.exec(
       `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
