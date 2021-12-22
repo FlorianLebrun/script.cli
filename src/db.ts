@@ -77,7 +77,7 @@ export const db = {
     options = { ...defaultOpt, ...options }
 
     const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName ${options.sourceName} -ODBCDriverName ${options.driverName} -DbType ${options.kind} -DbServer ${options.server} -DbName ${options.name} -DbUser ${options.user} -DbPassword '${options.password}'`
+    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}'`
     console.log(`Creating ODBC connection ${options.sourceName}`)
     return command.exec(
       `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
