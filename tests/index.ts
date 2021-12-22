@@ -1,5 +1,6 @@
 import { print, command, string, env, directory } from "@ewam/script.cli"
-
+require("./test-odbc")
+/*
 var assert = require("assert")
 print.info("Hello")
 const gitStatus = command.read.exec("git status")
@@ -23,4 +24,4 @@ const VSLocation = directory.getValidPath([
   "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsx86_amd64.bat",
   "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvarsx86_amd64.bat",
 ])
-console.log(env.getScriptEnvVars(VSLocation))
+console.log(env.getScriptEnvVars(VSLocation))*/

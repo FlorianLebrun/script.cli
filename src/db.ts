@@ -9,7 +9,8 @@ const createODBC = `param(
   $DbServer,
   $DbName,
   $DbUser = "",
-  $DbPassword = ""
+  $DbPassword = "",
+  $DbPort=5432
 )
 
 Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction SilentlyContinue
@@ -77,8 +78,8 @@ export const db = {
     options = { ...defaultOpt, ...options }
 
     const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}'`
-    console.log(`Creating ODBC connection ${options.sourceName}`)
+    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}' -DbPort ${options.port}`
+    console.log(`Creating ODBC connection ${scriptParameters}`)
     return command.exec(
       `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
       { cwd: __dirname }
