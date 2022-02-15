@@ -49,7 +49,6 @@ export const print: {
   title: printColored(colors.Cyan),
   info: printColored(colors.Yellow),
   exception: function (e) {
-    print.error(e.message)
     printColored(colors.Red)(e.stack)
   },
 }

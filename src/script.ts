@@ -1,7 +1,6 @@
 import Process from "process"
 import { print } from "./print"
 
-require.resolve
 export type ScriptArgumentType = {
   type: string
   enums?: string[]
@@ -115,7 +114,6 @@ function scriptEntrypoint(program: (argv?: any) => void, descriptor?: ScriptDesc
     program(argv)
   }
   catch (e) {
-    //print.error(e.message)
     print.exception(e)
     print.error(" >>> Failed script:", Process.argv.join(" "))
     Process.exit(1)
