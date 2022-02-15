@@ -11,10 +11,16 @@ export type CommandOptionsType = {
   ignoreError?: boolean
 }
 
+export type ReadCommandOptionsType = CommandOptionsType & {
+  maxBuffer?: number // limit the output buffer to 128Mi by default
+}
+
+const stdout_size_max = 128 * 1024 * 1024 // 128Mi
+
 export const command: {
   read: {
-    exec(command: string, options: CommandOptionsType): string | Error,
-    call(program: string, args: string[], options: CommandOptionsType): string | Error
+    exec(command: string, options: ReadCommandOptionsType): string | Error,
+    call(program: string, args: string[], options: ReadCommandOptionsType): string | Error
   },
   exec(command: string, options?: CommandOptionsType): Error
   call(program: string, args?: (string | stringMap | stringArray)[], options?: CommandOptionsType): Error
@@ -25,12 +31,14 @@ export const command: {
       return execSync(command, {
         ...options,
         stdio: 'pipe',
+        maxBuffer: options?.maxBuffer || stdout_size_max,
       })
     },
     call(program, args, options) {
       return spawnSync(program, normalizeArgs(args), {
         ...options,
         stdio: 'pipe',
+        maxBuffer: options?.maxBuffer || stdout_size_max,
       })
     },
   },
@@ -100,8 +108,8 @@ function normalizeArgs(argv: any[]): string[] {
         process(arg[key])
       }
     }
-    else {
-      result.push(arg.toString())
+    else if (arg != undefined) {
+      result.push(String(arg))
     }
   }
   process(argv)

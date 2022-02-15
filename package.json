@@ -1,13 +1,14 @@
 {
   "name": "@polycuber/script.cli",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "private": false,
   "scripts": {
     "start": "project-devrun --watch ./.build --inspect 9230 --program ./.build/tests/test-docker",
-    "build": "ttsc && project-pack",
+    "build": "ttsc && node tools/project-pack.js",
+    "publish": "npm run build && cd dist && npm publish",
     "watch": "ttsc -watch",
     "lint": "tslint",
     "test": "node ./.build/tests"
