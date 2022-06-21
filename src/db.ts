@@ -10,7 +10,8 @@ const createODBC = `param(
   $DbName,
   $DbUser = "",
   $DbPassword = "",
-  $DbPort=5432
+  $DbPort=5432,
+  $TrustServerCertificate
 )
 
 Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction SilentlyContinue
@@ -18,7 +19,10 @@ Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction Silently
 if($DbType -eq "Postgre") {
   Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer","Port=$DbPort","Database=$DbName", "Username=$DBUser"; "Password=$DbPassword", "SSLMode=allow")
 } elseif ($DbType -eq "MSSQL") {
-  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer")
+  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer", "Database=$DbName")
+  if($TrustServerCertificate -eq "Yes"){
+  set-itemproperty -Path HKLM:\\Software\\ODBC\\ODBC.INI\\$ODBCConnectionName -name TrustServerCertificate -value Yes
+  }
 } 
 `
 export enum DBKind {
@@ -47,6 +51,8 @@ export type odbcParams = {
   * default to '5432' when used with Postgre
   */
   port?: number
+  trustServerCertificate?: string
+
 }
 
 const defaultOptions = {
@@ -55,7 +61,8 @@ const defaultOptions = {
     port: 5432
   },
   MSSQL: {
-    driverName: "SQL Server Native Client 11.0"
+    driverName: "SQL Server Native Client 11.0",
+    trustServerCertificate: "No"
   }
 }
 
@@ -78,7 +85,7 @@ export const db = {
     options = { ...defaultOpt, ...options }
 
     const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}' -DbPort ${options.port}`
+    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -TrustServerCertificate '${options.trustServerCertificate}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}' -DbPort ${options.port}`
     console.log(`Creating ODBC connection ${scriptParameters}`)
     return command.exec(
       `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
