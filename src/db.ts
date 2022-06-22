@@ -61,7 +61,7 @@ const defaultOptions = {
     port: 5432
   },
   MSSQL: {
-    driverName: "SQL Server Native Client 11.0",
+    driverName: "ODBC Driver 18 for SQL Server",
     trustServerCertificate: "No"
   }
 }
