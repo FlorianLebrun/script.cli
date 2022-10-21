@@ -6,7 +6,7 @@ import fs from "fs"
  */
 export const file = {
   exists(path: string): boolean {
-    return fs.existsSync(path) && fs.lstatSync(path).isFile()
+    return fs.existsSync(path) && fs.statSync(path).isFile()
   },
   copy: {
     toFile(src: string, dest: string): string {
@@ -86,7 +86,7 @@ export const directory = {
     throw "no valid path found"
   },
   exists(path: string): boolean {
-    return fs.existsSync(path) && fs.lstatSync(path).isDirectory()
+    return fs.existsSync(path) && fs.statSync(path).isDirectory()
   },
   filenames(path: string, recursive?: Boolean): string[] {
     try {
@@ -120,7 +120,7 @@ export const directory = {
     if (directory.exists(src)) {
       for (const name of fs.readdirSync(src)) {
         const path = Path.join(src, name)
-        const stats = fs.lstatSync(path)
+        const stats = fs.statSync(path)
         const destination = Path.join(dest, name)
         if (stats.isDirectory()) {
           directory.copy(path, destination, filter)
@@ -138,18 +138,24 @@ export const directory = {
     }
   },
   remove(path: string) {
-    if (fs.existsSync(path) && fs.lstatSync(path).isDirectory()) {
-      fs.readdirSync(path).forEach(function (entry) {
-        var entry_path = Path.join(path, entry)
-        if (fs.lstatSync(entry_path).isDirectory()) {
-          directory.remove(entry_path)
-        }
-        else {
-          try { file.remove(entry_path) }
-          catch (e) { return }
-        }
-      })
-      fs.rmdirSync(path)
+    if (fs.existsSync(path)) {
+      const stats = fs.lstatSync(path)
+      if (stats.isSymbolicLink()) {
+        file.remove(path)
+      }
+      else if (stats.isDirectory()) {
+        fs.readdirSync(path).forEach(function (entry) {
+          var entry_path = Path.join(path, entry)
+          if (fs.lstatSync(entry_path).isDirectory()) {
+            directory.remove(entry_path)
+          }
+          else {
+            try { file.remove(entry_path) }
+            catch (e) { return }
+          }
+        })
+        fs.rmdirSync(path)
+      }
     }
   },
   clean(path: string) {
