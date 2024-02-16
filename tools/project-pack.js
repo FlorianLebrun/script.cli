@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { script, file, directory, command, print } = require("../.build/src");
+const { script, file, directory, command, print } = require("../.build/src")
 const Path = require("path")
 
 script(async () => {
@@ -16,18 +16,18 @@ script(async () => {
   /*
      Build typescript
   */
-  print.info(`[step: Build typescript]`)
-  {
-    const tsconfig = file.read.json("./tsconfig.json")
-    tsconfig.compilerOptions.module = "ES2015"
-    tsconfig.compilerOptions.declaration = true
-    tsconfig.compilerOptions.outDir = "./dist/.build"
-    file.write.json("./.build.tsconfig.json", tsconfig)
-    command.exec("ttsc -p ./.build.tsconfig.json")
-    file.remove("./.build.tsconfig.json")
-
-  }
-
+     print.info(`[step: Build typescript]`)
+     {
+       const tsconfig = file.read.json("./tsconfig.json")
+       tsconfig.compilerOptions.module = "ES2015"
+       tsconfig.compilerOptions.declaration = true
+       tsconfig.compilerOptions.outDir = "./dist/.build"
+       file.write.json("./.build.tsconfig.json", tsconfig)
+       command.exec("tspc -p ./.build.tsconfig.json")
+       file.remove("./.build.tsconfig.json")
+   
+     }
+   
   /*
      Rollup script
   */
@@ -47,33 +47,14 @@ script(async () => {
       ...package_json,
       "main": "index.js",
       "types": "index.d.ts",
-      "dependencies": resolveDeps(package_json.dependencies),
+      "dependencies": undefined,
       "devDependencies": undefined,
       "scripts": undefined
     })
 
-    directory.remove("./docs")
-    directory.copy("./docs", "./dist/docs")
     file.copy.toFile("./README.md", "./dist/README.md")
-
-    directory.remove("./dist/media")
-    directory.copy("./media", "./dist/media")
-
-    directory.remove("./dist/language")
-    directory.copy("./language", "./dist/language")
   }
 })
-
-function resolveDeps(deps) {
-  let result
-  for (const key in deps) {
-    const ref = deps[key]
-    if (!result) result = {}
-    if (ref[0] === ".") result[key] = Path.resolve(ref)
-    else result[key] = ref
-  }
-  return result
-}
 
 async function rollup_script(package_json, minify, input, output) {
   const { rollup } = require('rollup')

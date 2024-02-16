@@ -11,7 +11,7 @@ export const web = {
         const file = fs.createWriteStream(path)
           .on('finish', function () {
             file.close()
-            resolve()
+            resolve(null)
           })
           .on('error', function (err) { // Handle errors
             fs.unlink(path, () => reject(err))

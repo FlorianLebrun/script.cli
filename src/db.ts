@@ -1,95 +1,205 @@
 import { command } from "./command"
-import { file } from "./file"
-var path = require("path")
+import { print } from "./print"
 
-const createODBC = `param(
-  $ODBCConnectionName,
-  $ODBCDriverName,
-  $DbType,
-  $DbServer,
-  $DbName,
-  $DbUser = "",
-  $DbPassword = "",
-  $DbPort=5432,
-  $TrustServerCertificate
-)
-
-Remove-OdbcDsn -Name $ODBCConnectionName -DsnType "System" -ErrorAction SilentlyContinue
-
-if($DbType -eq "Postgre") {
-  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer","Port=$DbPort","Database=$DbName", "Username=$DBUser"; "Password=$DbPassword", "SSLMode=allow")
-} elseif ($DbType -eq "MSSQL") {
-  Add-OdbcDsn -Name $ODBCConnectionName -DriverName "$ODBCDriverName" -DsnType "System" -Platform "64-bit" -SetPropertyValue @("Server=$DbServer", "Database=$DbName")
-  if($TrustServerCertificate -eq "Yes"){
-  set-itemproperty -Path HKLM:\\Software\\ODBC\\ODBC.INI\\$ODBCConnectionName -name TrustServerCertificate -value Yes
-  }
-} 
-`
+/**
+ * List of supported DBs
+ */
 export enum DBKind {
   MSSQL = "MSSQL",
   Postgre = "Postgre",
 }
-/**
- * ODBC Creation required parameters
- */
-export type odbcParams = {
-  /**
-   * Database kind
-   */
-  kind: DBKind
-  sourceName: string
-  server: string
-  name: string
-  user: string
-  password: string
-  /**
-   * default to 'SQL Server Native Client 11.0' when used with MSSQL
-   * default to 'PostgreSQL Unicode(x64)' when used with Postgre
-   */
-  driverName?: string
-  /**
-  * default to '5432' when used with Postgre
-  */
-  port?: number
-  trustServerCertificate?: string
 
+export type YesNo = "Yes" | "No"
+
+/**
+ * Parameters are split in 2
+ * - Data Source parameters, common to any ODBC connection
+ * - Driver parameters, specific to each driver
+ */
+export type ODBCParams = {
+  dataSource: {
+    kind: DBKind
+    name: string
+    driverName?: string
+    dsnType?: "System" | "User"
+    platform?: "64-bit" | "32-bit"
+  },
+  driver: { // Note: some options are driver specific
+    server: string
+    database: string
+    user?: string
+    password?: string
+    port?: number
+    trustServerCertificate?: YesNo
+    SSLMode?: string
+    trustedConnection?: YesNo
+    encrypt?: YesNo
+  },
 }
 
-const defaultOptions = {
+/**
+ * Define the default options per DBKind
+ */
+type DefaultValue = {
+  dataSource?: Partial<ODBCParams["dataSource"]>
+  driver?: Partial<ODBCParams["driver"]>
+}
+const defaultOptions: { [key in DBKind]: DefaultValue } = {
   Postgre: {
-    driverName: "PostgreSQL Unicode(x64)",
-    port: 5432
+    dataSource: {
+      dsnType: "User",
+      driverName: "PostgreSQL Unicode(x64)",
+    },
+    driver: {
+      port: 5432,
+      SSLMode: "allow",
+    },
   },
   MSSQL: {
-    driverName: "ODBC Driver 18 for SQL Server",
-    trustServerCertificate: "No"
+    dataSource: {
+      dsnType: "User",
+      driverName: "ODBC Driver 18 for SQL Server",
+    },
+    driver: {
+      trustedConnection: "No",
+      encrypt: "No",
+      trustServerCertificate: "No",
+    },
+  },
+}
+
+class ODBCManager {
+  constructor(public readonly options: ODBCParams) { }
+
+  static callPowershell(scriptCommand: string): number {
+    // We don't want to display anything from the command
+    return command.exec(`powershell.exe -NoProfile -ExecutionPolicy Unrestricted -NonInteractive -WindowStyle Hidden -Command "${scriptCommand}" 2>nul`)
   }
+
+  removeConnectionIfNeeded() {
+    try {
+      ODBCManager.callPowershell(`Remove-OdbcDsn -Name '${this.options.dataSource.name}' -DsnType '${this.options.dataSource.dsnType}' -ErrorAction SilentlyContinue`)
+      print.success("Previous connection removed")
+    } catch (err) { }
+  }
+
+  createConnection(): number {
+    const baseOptions = [
+      `-Name '${this.options.dataSource.name}'`,
+      `-DriverName '${this.options.dataSource.driverName}'`,
+      `-DsnType '${this.options.dataSource.dsnType}'`,
+    ]
+    if (this.options.dataSource.platform) baseOptions.push(` -Platform '${this.options.dataSource.platform}'`)
+
+    try {
+      const exitCode = ODBCManager.callPowershell(`Add-OdbcDsn ${baseOptions.join(" ")} -SetPropertyValue @(${driverOptionsGenerator[this.options.dataSource.kind].generate(this.options)})`)
+      print.success("Connection created")
+      return exitCode
+    } catch (err) {
+      print.error("Failed to create the asked ODBC connection")
+      return -1
+    }
+  }
+}
+
+/**
+ * Assemble the options for the driver, depending on the kind/driver
+ */
+const driverOptionsGenerator = {
+  MSSQL: {
+    generate(options: ODBCParams): string {
+      const generateDriverVersionSpecificProperties = (): string[] => {
+        const moreProperties: string[] = []
+        const parsedDriverName = parseDriverName(options.dataSource.kind, options.dataSource.driverName)
+        if (parsedDriverName) {
+          // TrustServerCertificate
+          if ((parsedDriverName.name === "SQL Server" && parsedDriverName.version >= 2022) ||
+            (parsedDriverName.name === "ODBC Driver for SQL Server" && parsedDriverName.version >= 18)) {
+            if (options.driver.encrypt) moreProperties.push(`'Encrypt=${options.driver.encrypt}'`)
+            if (options.driver.trustServerCertificate) moreProperties.push(`'TrustServerCertificate=${options.driver.trustServerCertificate}'`)
+          }
+        }
+        return moreProperties
+      }
+
+      const driverOptions = [
+        `'Server=${options.driver.server}'`,
+        `'Database=${options.driver.database}'`,
+      ]
+      if (options.driver.trustedConnection) driverOptions.push(`'Trusted_Connection=${options.driver.trustedConnection}'`)
+      driverOptions.push(...generateDriverVersionSpecificProperties())
+
+      return driverOptions.join(", ")
+    },
+  },
+  Postgre: {
+    generate(options: ODBCParams): string {
+      const driverOptions = [
+        `'Server=${options.driver.server}'`,
+        `'Database=${options.driver.database}'`,
+        `'Port=${options.driver.port}'`,
+        `'SSLMode=${options.driver.SSLMode}'`,
+      ]
+      if (options.driver.user) driverOptions.push(`'Username=${options.driver.user}'`)
+      if (options.driver.password) driverOptions.push(`'Password=${options.driver.password}'`)
+      return driverOptions.join(", ")
+    }
+  },
+}
+
+type DriverCategory = "SQL Server" | "ODBC Driver for SQL Server" | "PostgreSQL"
+
+/**
+ * Parse the driver name, separate the name from the version
+ * @param dbkind DBkind for the connection
+ * @param driverName Name of the driver
+ * @returns Parsed structure or undefined
+ */
+function parseDriverName(dbkind: DBKind, driverName: string): { name: DriverCategory, version: number } {
+  if (dbkind === DBKind.MSSQL) {
+    // ODBC or SQL
+    if ((/^ODBC Driver \d+ for SQL Server$/i).test(driverName)) {
+      const versionReg = /(?<=ODBC Driver )\d+(?= for SQL Server)/i
+      return {
+        name: "ODBC Driver for SQL Server",
+        version: Number(versionReg.exec(driverName)?.at(0).trim()),
+      }
+    }
+    else if ((/^SQL Server \d+$/i).test(driverName)) {
+      const versionReg = /(?=SQL Server )\d+/i
+      return {
+        name: "SQL Server",
+        version: Number(versionReg.exec(driverName)?.at(0).trim()),
+      }
+    }
+  }
+  return undefined
 }
 
 export const db = {
   /**
    * Create an ODBC Connection using powershell and `Add-OdbcDsn`
    * visit https://docs.microsoft.com/en-us/powershell/module/wdac/add-odbcdsn for details
-   * Warning: you must be admin to be able to run this task
+   * Warning: System DSN requires you to run this task as admin
    * @param options Options to create the connection
    */
-  createODBC(options: odbcParams): number {
-    file.write.text(
-      path.join(__dirname, "create-odbc-connection.ps1"),
-      createODBC
-    )
-    const defaultOpt = defaultOptions[options.kind]
-    if (!defaultOpt) {
-      throw new Error("Wrong option, use Postgre or MSSQL for kind")
-    }
-    options = { ...defaultOpt, ...options }
+  createODBC(options: ODBCParams): number {
+    if (!(options?.dataSource?.kind in DBKind)) throw new Error(`Unknown kind "${options?.dataSource?.kind}", use one of ${Object.values(DBKind).join(", ")}`)
 
-    const scriptName = path.join(__dirname, "create-odbc-connection.ps1")
-    const scriptParameters = `-ODBCConnectionName '${options.sourceName}' -TrustServerCertificate '${options.trustServerCertificate}' -ODBCDriverName '${options.driverName}' -DbType '${options.kind}' -DbServer '${options.server}' -DbName '${options.name}' -DbUser '${options.user}' -DbPassword '${options.password}' -DbPort ${options.port}`
-    console.log(`Creating ODBC connection ${scriptParameters}`)
-    return command.exec(
-      `powershell.exe -NoProfile -ExecutionPolicy Unrestricted -Command "${scriptName} ${scriptParameters}"`,
-      { cwd: __dirname }
-    )
+    const defaultKind: DefaultValue = defaultOptions[options.dataSource.kind] || {}
+    const fullOptions: ODBCParams = {
+      dataSource: {
+        ...defaultKind.dataSource,
+        ...options.dataSource,
+      },
+      driver: {
+        ...defaultKind.driver,
+        ...options.driver,
+      },
+    }
+
+    const odbcManager = new ODBCManager(fullOptions)
+    odbcManager.removeConnectionIfNeeded()
+    return odbcManager.createConnection()
   },
 }

@@ -32,5 +32,16 @@ db.createODBC({
   user: "myUser",
   server: "db.sql.com",
 })
-
+db.createODBC({
+  dataSource: {
+    kind: DBKind.MSSQL,
+    name: "test",
+    driverName: "SQL Server",
+  },
+  driver: {
+    database: "myDB",
+    server: "db.sql.com",
+    trustedConnection: "Yes",
+  }
+})
 ```

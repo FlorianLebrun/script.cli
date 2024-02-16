@@ -1,12 +1,14 @@
 import { db, DBKind } from "../src"
 
 db.createODBC({
-  sourceName: "test",
-  kind: DBKind.MSSQL,
-  name: "sqlserveronaci.francecentral.azurecontainer.io",
-  password: "mypassss",
-  user: "sa",
-  server: "sqlserveronaci.francecentral.azurecontainer.io",
-  trustServerCertificate: "Yes",
-  driverName: "ODBC Driver 18 for SQL Server"
+  dataSource: {
+    kind: DBKind.MSSQL,
+    name: "test",
+    driverName: "SQL Server",
+    dsnType: "User",
+  },
+  driver: {
+    database: "sqlserveronaci.francecentral.azurecontainer.io",
+    server: "sqlserveronaci.francecentral.azurecontainer.io",
+  }
 })
