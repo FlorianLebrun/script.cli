@@ -11,6 +11,8 @@ export enum DBKind {
 
 export type YesNo = "Yes" | "No"
 
+export type Mode = "production" | "development"
+
 /**
  * Parameters are split in 2
  * - Data Source parameters, common to any ODBC connection
@@ -69,16 +71,17 @@ const defaultOptions: { [key in DBKind]: DefaultValue } = {
 }
 
 class ODBCManager {
-  constructor(public readonly options: ODBCParams) { }
+  constructor(public readonly options: ODBCParams, public readonly mode: Mode) { }
 
-  static callPowershell(scriptCommand: string): number {
-    // We don't want to display anything from the command
-    return command.exec(`powershell.exe -NoProfile -ExecutionPolicy Unrestricted -NonInteractive -WindowStyle Hidden -Command "${scriptCommand}" 2>nul`)
+  static callPowershell(scriptCommand: string, mode: Mode, extraOptions: string = ""): number {
+    // We don't want to display anything from the command in production mode
+    const redirect = mode === "production" ? "1>nul 2>nul" : ""
+    return command.exec(`powershell.exe -NoProfile -ExecutionPolicy Unrestricted -NonInteractive -WindowStyle Hidden -Command "${scriptCommand}" ${extraOptions} ${redirect}`)
   }
 
   removeConnectionIfNeeded() {
     try {
-      ODBCManager.callPowershell(`Remove-OdbcDsn -Name '${this.options.dataSource.name}' -DsnType '${this.options.dataSource.dsnType}' -ErrorAction SilentlyContinue`)
+      ODBCManager.callPowershell(`Remove-OdbcDsn -Name '${this.options.dataSource.name}' -DsnType '${this.options.dataSource.dsnType}'`, this.mode, "-ErrorAction SilentlyContinue")
       print.success("Previous connection removed")
     } catch (err) { }
   }
@@ -92,7 +95,7 @@ class ODBCManager {
     if (this.options.dataSource.platform) baseOptions.push(` -Platform '${this.options.dataSource.platform}'`)
 
     try {
-      const exitCode = ODBCManager.callPowershell(`Add-OdbcDsn ${baseOptions.join(" ")} -SetPropertyValue @(${driverOptionsGenerator[this.options.dataSource.kind].generate(this.options)})`)
+      const exitCode = ODBCManager.callPowershell(`Add-OdbcDsn ${baseOptions.join(" ")} -SetPropertyValue @(${driverOptionsGenerator[this.options.dataSource.kind].generate(this.options)})`, this.mode)
       print.success("Connection created")
       return exitCode
     } catch (err) {
@@ -183,7 +186,7 @@ export const db = {
    * Warning: System DSN requires you to run this task as admin
    * @param options Options to create the connection
    */
-  createODBC(options: ODBCParams): number {
+  createODBC(options: ODBCParams, mode: Mode = "production"): number {
     if (!(options?.dataSource?.kind in DBKind)) throw new Error(`Unknown kind "${options?.dataSource?.kind}", use one of ${Object.values(DBKind).join(", ")}`)
 
     const defaultKind: DefaultValue = defaultOptions[options.dataSource.kind] || {}
@@ -198,7 +201,7 @@ export const db = {
       },
     }
 
-    const odbcManager = new ODBCManager(fullOptions)
+    const odbcManager = new ODBCManager(fullOptions, mode)
     odbcManager.removeConnectionIfNeeded()
     return odbcManager.createConnection()
   },
