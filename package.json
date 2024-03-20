@@ -1,11 +1,14 @@
 {
   "name": "@ewam/script.cli",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Simple and not performant common CLI operations",
   "main": "index.js",
   "license": "MIT",
   "author": {
     "name": "Mphasis Wyde"
+  },
+  "engines": {
+    "node": ">=16"
   },
   "private": false,
   "repository": {
